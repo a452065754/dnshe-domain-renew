@@ -147,7 +147,13 @@ class Handler(BaseHTTPRequestHandler):
             targets = [d for d in domains if d.renewable()]
         else:
             ids = {int(i) for i in (body.get("ids") or []) if str(i).lstrip("-").isdigit()}
-            targets = [d for d in domains if d.id in ids]
+            picked = [d for d in domains if d.id in ids]
+            # 面板按 id 续期也要过窗口校验：未进 180 天窗口的域名根本不该发请求
+            targets = [d for d in picked if d.renewable()]
+            if not targets and picked:
+                names = "、".join(d.name for d in picked)
+                return self._json({"ok": False, "error":
+                                   f"{names} 未进入 180 天续期窗口，后端会拒绝，已取消请求"})
 
         if not targets:
             return self._json({"ok": False, "error": "没有匹配到可续期的域名（可能未进入 180 天窗口）"})

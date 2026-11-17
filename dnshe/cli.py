@@ -233,7 +233,9 @@ def cmd_renew(args, cfg) -> int:
         return 2
     print(f"准备续期 {len(targets)} 个域名：")
     for d in targets:
-        print(f"  - {d.name}（剩余 {'永久' if d.permanent else str(d.days_left) + ' 天'}）")
+        left = "永久" if d.permanent else f"{d.days_left} 天"
+        hint = "" if d.renewable() else c("（未进 180 天窗口，后端会拒绝）", "yellow")
+        print(f"  - {d.name}（剩余 {left}）{hint}")
     if args.yes is False and not args.dry_run:
         try:
             ans = input("\n确认执行？(y/N) ").strip().lower()
