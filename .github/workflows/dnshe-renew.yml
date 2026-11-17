@@ -1,0 +1,46 @@
+name: dnshe-renew
+
+# 每天北京时间 09:10 检查并自动续期 DNSHE 免费域名
+# 注意：cron 用 UTC，北京 09:10 = UTC 01:10
+on:
+  schedule:
+    - cron: "10 1 * * *"
+  workflow_dispatch:        # 支持手动触发一次
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dnshe-renew
+  cancel-in-progress: false
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 检查域名并自动续期
+        env:
+          DNSHE_API_KEY: ${{ secrets.DNSHE_API_KEY }}
+          DNSHE_API_SECRET: ${{ secrets.DNSHE_API_SECRET }}
+          # 想推送到企业微信/钉钉，在仓库 Secrets 里加 DNSHE_WEBHOOK_URL，类型用 DNSHE_WEBHOOK_KIND
+          DNSHE_NOTIFY_WEBHOOK: ${{ secrets.DNSHE_WEBHOOK_URL }}
+          DNSHE_NOTIFY_KIND: ${{ secrets.DNSHE_WEBHOOK_KIND }}
+        run: |
+          python dnshe.py test || true          # 先自检，失败不中断正式任务
+          python dnshe.py auto
+
+      - name: 上传运行日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dnshe-logs-${{ github.run_number }}
+          path: logs/
+          retention-days: 14
+          if-no-files-found: ignore

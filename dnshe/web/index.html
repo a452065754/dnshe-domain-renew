@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DNSHE 域名续期</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --panel:#ffffff; --line:#e6e8ec; --line-2:#eef0f3;
+    --ink:#1a1d23; --ink-2:#5b6472; --ink-3:#8b94a3;
+    --brand:#4f46e5; --brand-soft:#eef0ff;
+    --red:#d92d20; --red-soft:#fef3f2;
+    --amber:#b54708; --amber-soft:#fffaeb;
+    --green:#067647; --green-soft:#ecfdf3;
+    --cyan:#0e7090; --cyan-soft:#ecfdff;
+    --gray-soft:#f2f4f7;
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1160px; margin:0 auto; padding:28px 20px 56px}
+  header{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:22px}
+  .logo{
+    width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
+    background:linear-gradient(135deg,#4f46e5,#7c73ff); color:#fff; font-weight:700; font-size:15px;
+    box-shadow:0 4px 10px rgba(79,70,229,.28); flex:none;
+  }
+  h1{font-size:18px; font-weight:650; margin:0; letter-spacing:.2px}
+  .sub{color:var(--ink-3); font-size:12.5px; margin-top:1px}
+  .spacer{flex:1}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+    font-size:12px;font-weight:550;border:1px solid transparent;
+  }
+  .pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .pill.ok{background:var(--green-soft);color:var(--green);border-color:#abefc6}
+  .pill.bad{background:var(--red-soft);color:var(--red);border-color:#fecdca}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  .stat{padding:15px 16px}
+  .stat .k{color:var(--ink-3);font-size:12px;font-weight:550;letter-spacing:.3px}
+  .stat .v{font-size:26px;font-weight:680;margin-top:6px;letter-spacing:-.4px}
+  .stat .n{color:var(--ink-3);font-size:12px;margin-top:2px}
+  .v.red{color:var(--red)} .v.amber{color:var(--amber)} .v.green{color:var(--green)}
+
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  button{
+    font:inherit;font-weight:550;cursor:pointer;border-radius:8px;padding:8px 14px;
+    border:1px solid var(--line);background:#fff;color:var(--ink);transition:.14s;
+    box-shadow:var(--shadow);
+  }
+  button:hover{border-color:#d0d5dd;background:#fcfcfd}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  button.primary{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 2px 6px rgba(79,70,229,.3)}
+  button.primary:hover{background:#443bdb}
+  button.ghost{background:transparent;box-shadow:none;border-color:transparent;color:var(--ink-2)}
+  button.ghost:hover{background:var(--gray-soft)}
+  button.mini{padding:4px 9px;font-size:12.5px;border-radius:6px}
+  .field{display:flex;align-items:center;gap:6px;color:var(--ink-2);font-size:13px}
+  .field input{
+    width:64px;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:7px;
+    text-align:center;background:#fff;
+  }
+
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  thead th{
+    text-align:left;font-size:12px;font-weight:600;color:var(--ink-3);letter-spacing:.3px;
+    padding:11px 14px;background:#fbfcfd;border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  thead th:first-child{border-top-left-radius:12px}
+  thead th:last-child{border-top-right-radius:12px;text-align:right}
+  tbody td{padding:12px 14px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#fafbfc}
+  .dom{font-weight:600;font-size:14px;letter-spacing:.1px}
+  .dom-id{color:var(--ink-3);font-size:11.5px;margin-top:2px}
+  .mono{font-variant-numeric:tabular-nums;color:var(--ink-2)}
+  .days{display:flex;align-items:center;gap:9px;min-width:132px}
+  .bar{flex:1;height:5px;border-radius:99px;background:#eceef2;overflow:hidden;min-width:56px}
+  .bar i{display:block;height:100%;border-radius:99px}
+  .bar i.red{background:var(--red)} .bar i.amber{background:#f79009}
+  .bar i.cyan{background:#06aed4} .bar i.green{background:#12b76a}
+  .bar i.gray{background:#c8ced8}
+  .num{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;min-width:48px;text-align:right}
+  td.act{text-align:right;white-space:nowrap}
+  .empty{padding:44px 20px;text-align:center;color:var(--ink-3)}
+  .empty b{display:block;color:var(--ink-2);margin-bottom:6px}
+
+  .section-title{display:flex;align-items:center;gap:8px;margin:30px 0 10px;font-size:13px;font-weight:620;color:var(--ink-2)}
+  .section-title span{color:var(--ink-3);font-weight:500}
+  .hist{padding:6px 0}
+  .hist-row{display:flex;gap:10px;padding:8px 16px;font-size:13px;border-bottom:1px solid var(--line-2)}
+  .hist-row:last-child{border-bottom:none}
+  .hist-row .t{color:var(--ink-3);font-variant-numeric:tabular-nums;flex:none;width:150px}
+  .hist-row .r{flex:none;width:18px;font-weight:700}
+  .hist-row .r.ok{color:var(--green)} .hist-row .r.bad{color:var(--red)}
+
+  #toast{
+    position:fixed;left:50%;transform:translate(-50%,-16px);top:20px;z-index:99;
+    background:#101828;color:#fff;padding:11px 18px;border-radius:10px;font-size:13.5px;
+    box-shadow:0 8px 24px rgba(16,24,40,.24);opacity:0;pointer-events:none;transition:.24s;
+    max-width:min(90vw,560px);
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+  #toast.err{background:#b42318}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid #fff6;border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-1px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media(max-width:860px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .wrap{padding:18px 12px 40px}
+    .hide-sm{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">DN</div>
+    <div>
+      <h1>DNSHE 域名续期</h1>
+      <div class="sub">免费域名到期监控 · 180 天窗口自动续期</div>
+    </div>
+    <div class="spacer"></div>
+    <span id="credState" class="pill bad"><span class="dot"></span>检查凭据…</span>
+  </header>
+
+  <div class="stats">
+    <div class="card stat"><div class="k">域名总数</div><div class="v" id="sTotal">-</div><div class="n" id="sPermanent">永久 0 个</div></div>
+    <div class="card stat"><div class="k">窗口内可续期</div><div class="v" id="sWindow">-</div><div class="n">到期前 180 天开放</div></div>
+    <div class="card stat"><div class="k">达到阈值</div><div class="v" id="sDue">-</div><div class="n" id="sDueNote">自动续期目标</div></div>
+    <div class="card stat"><div class="k">最紧急剩余</div><div class="v" id="sUrgent">-</div><div class="n" id="sUrgentName">—</div></div>
+  </div>
+
+  <div class="toolbar">
+    <button class="primary" id="btnRefresh">刷新数据</button>
+    <button id="btnRenewWindow">续期窗口内全部</button>
+    <button id="btnAuto">按阈值续期</button>
+    <button class="ghost" id="btnDry">演练（不执行）</button>
+    <div class="spacer"></div>
+    <label class="field">阈值 <input type="number" id="threshold" min="0" max="180" step="1"> 天</label>
+  </div>
+
+  <div class="card" style="overflow:hidden">
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>域名</th><th>状态</th><th class="hide-sm">到期时间</th>
+            <th>剩余</th><th class="hide-sm">紧急度</th><th style="text-align:right">操作</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr><td colspan="6" class="empty">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-title">最近续期记录 <span id="histNote"></span></div>
+  <div class="card hist" id="hist"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const LEVEL = {
+  expired:  {label:'已过期', cls:'red',   bar:'red',   text:'var(--red)'},
+  urgent:   {label:'紧急',   cls:'red',   bar:'red',   text:'var(--red)'},
+  soon:     {label:'临近',   cls:'amber', bar:'amber', text:'var(--amber)'},
+  window:   {label:'窗口内', cls:'cyan',  bar:'cyan',  text:'var(--cyan)'},
+  safe:     {label:'安全',   cls:'green', bar:'green', text:'var(--green)'},
+  permanent:{label:'永久',   cls:'blue',  bar:'gray',  text:'var(--cyan)'},
+  unknown:  {label:'未知',   cls:'gray',  bar:'gray',  text:'var(--ink-3)'},
+};
+const PILL_STYLE = {
+  red:'background:var(--red-soft);color:var(--red);border-color:#fecdca',
+  amber:'background:var(--amber-soft);color:var(--amber);border-color:#fedf89',
+  cyan:'background:var(--cyan-soft);color:var(--cyan);border-color:#a5f0fc',
+  green:'background:var(--green-soft);color:var(--green);border-color:#abefc6',
+  blue:'background:var(--brand-soft);color:var(--brand);border-color:#c7c9ff',
+  gray:'background:var(--gray-soft);color:var(--ink-2);border-color:var(--line)',
+};
+
+function toast(msg, isErr){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isErr ? ' err' : '');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { t.className = ''; }, isErr ? 5200 : 3000);
+}
+
+async function api(path, body){
+  const opt = body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)} : {};
+  const r = await fetch(path, opt);
+  const data = await r.json().catch(() => ({ok:false, error:'返回非 JSON'}));
+  if (!r.ok || data.ok === false) throw new Error(data.error || ('HTTP ' + r.status));
+  return data;
+}
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function renderStats(st){
+  $('sTotal').textContent = st.total;
+  $('sPermanent').textContent = '永久 ' + st.permanent + ' 个';
+  $('sWindow').textContent = st.in_window;
+  $('sDue').textContent = st.due;
+  $('sDueNote').textContent = '阈值 ≤ ' + st.threshold + ' 天';
+  if (st.most_urgent){
+    const d = st.most_urgent;
+    const v = $('sUrgent');
+    v.textContent = d.days_left + ' 天';
+    v.className = 'v ' + (d.days_left <= 7 ? 'red' : d.days_left <= 30 ? 'amber' : 'green');
+    $('sUrgentName').textContent = d.name;
+  } else {
+    $('sUrgent').textContent = '—';
+    $('sUrgentName').textContent = '全部安全/永久';
+  }
+}
+
+function renderRows(domains, threshold){
+  const tb = $('rows');
+  if (!domains.length){
+    tb.innerHTML = '<tr><td colspan="6" class="empty"><b>没有域名</b>检查 API 凭据是否正确</td></tr>';
+    return;
+  }
+  tb.innerHTML = domains.map(d => {
+    const lv = LEVEL[d.level] || LEVEL.unknown;
+    let daysCell, barPct;
+    if (d.permanent){
+      daysCell = '<span class="num" style="color:var(--cyan)">永久</span>';
+      barPct = 100;
+    } else if (d.days_left == null){
+      daysCell = '<span class="num" style="color:var(--ink-3)">—</span>';
+      barPct = 0;
+    } else {
+      const dl = d.days_left;
+      const color = dl <= 7 ? 'red' : dl <= 30 ? 'amber' : dl <= 180 ? 'cyan' : 'green';
+      daysCell = '<span class="num" style="color:' + (lv.text || 'inherit') + '">' + dl + ' 天</span>';
+      barPct = Math.max(3, Math.min(100, Math.round(Math.max(0, dl) / 365 * 100)));
+      daysCell = '<div class="days"><div class="bar"><i class="' + color + '" style="width:' + barPct + '%"></i></div>' + daysCell + '</div>';
+    }
+    const canRenew = d.renewable;
+    const btn = canRenew
+      ? '<button class="mini primary" data-id="' + d.id + '">续期</button>'
+      : '<button class="mini" disabled title="未进入 180 天续期窗口">未到窗口</button>';
+    return '<tr>' +
+      '<td><div class="dom">' + esc(d.name) + '</div><div class="dom-id">ID ' + (d.id == null ? '-' : d.id) + '</div></td>' +
+      '<td class="mono">' + esc(d.status || '-') + '</td>' +
+      '<td class="mono hide-sm">' + (d.expires_at ? esc(d.expires_at.slice(0,10)) : '—') + '</td>' +
+      '<td>' + daysCell + '</td>' +
+      '<td class="hide-sm"><span class="pill" style="' + (PILL_STYLE[lv.cls] || PILL_STYLE.gray) + '"><span class="dot"></span>' + lv.label + '</span></td>' +
+      '<td class="act">' + btn + '</td>' +
+      '</tr>';
+  }).join('');
+  tb.querySelectorAll('button[data-id]').forEach(b => {
+    b.addEventListener('click', () => renewOne(Number(b.dataset.id), b));
+  });
+}
+
+function renderHistory(rows){
+  const box = $('hist');
+  if (!rows.length){
+    box.innerHTML = '<div class="empty" style="padding:26px">还没有续期记录</div>';
+    $('histNote').textContent = '';
+    return;
+  }
+  $('histNote').textContent = '（最近 ' + rows.length + ' 条）';
+  box.innerHTML = rows.map(r => {
+    const ok = r.result === 'ok';
+    const extra = ok ? (r.new ? '新到期 ' + esc(r.new) : '已续期') : esc(r.error || '失败');
+    return '<div class="hist-row"><div class="t">' + esc(r.ts || '') + '</div>' +
+      '<div class="r ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✔' : '✘') + '</div>' +
+      '<div style="font-weight:560;width:190px;flex:none">' + esc(r.name || '') + '</div>' +
+      '<div style="color:var(--ink-2)">' + extra + '</div></div>';
+  }).join('');
+}
+
+let BUSY = false;
+function setBusy(v, label){
+  BUSY = v;
+  document.querySelectorAll('.toolbar button').forEach(b => { b.disabled = v; });
+  const pb = $('btnRefresh');
+  pb.innerHTML = v ? '<span class="spin"></span>' + (label || '处理中') : '刷新数据';
+}
+
+async function load(){
+  try {
+    const s = await api('/api/state');
+    const cs = $('credState');
+    if (s.has_credentials){
+      cs.className = 'pill ok';
+      cs.innerHTML = '<span class="dot"></span>凭据已配置';
+    } else {
+      cs.className = 'pill bad';
+      cs.innerHTML = '<span class="dot"></span>未配置凭据';
+    }
+    renderStats(s.stats);
+    renderRows(s.domains, s.stats.threshold);
+    renderHistory(s.history || []);
+    if (document.activeElement !== $('threshold')) $('threshold').value = s.stats.threshold;
+    if (s.error) toast(s.error, true);
+  } catch (e){
+    toast('加载失败：' + e.message, true);
+    $('rows').innerHTML = '<tr><td colspan="6" class="empty"><b>加载失败</b>' + esc(e.message) + '</td></tr>';
+  }
+}
+
+async function renewOne(id, btn){
+  if (BUSY) return;
+  setBusy(true, '续期中');
+  try {
+    const r = await api('/api/renew', {ids:[id]});
+    toast(r.message || '续期完成', !r.ok_count);
+  } catch (e){
+    toast('续期失败：' + e.message, true);
+  } finally {
+    setBusy(false);
+    await load();
+  }
+}
+
+async function runAuto(dryRun){
+  if (BUSY) return;
+  const th = Number($('threshold').value || 30);
+  setBusy(true, dryRun ? '演练中' : '续期中');
+  try {
+    const r = await api('/api/auto', {threshold: th, dry_run: dryRun});
+    toast(r.message || '完成', r.fail_count > 0);
+  } catch (e){
+    toast('执行失败：' + e.message, true);
+  } finally {
+    setBusy(false);
+    await load();
+  }
+}
+
+async function renewWindow(){
+  if (BUSY) return;
+  setBusy(true, '续期中');
+  try {
+    const r = await api('/api/renew', {mode:'window'});
+    toast(r.message || '完成', r.fail_count > 0);
+  } catch (e){
+    toast('执行失败：' + e.message, true);
+  } finally {
+    setBusy(false);
+    await load();
+  }
+}
+
+async function saveThreshold(){
+  const th = Number($('threshold').value || 30);
+  try {
+    await api('/api/config', {threshold_days: th});
+    toast('阈值已保存为 ' + th + ' 天');
+    await load();
+  } catch (e){
+    toast('保存失败：' + e.message, true);
+  }
+}
+
+$('btnRefresh').addEventListener('click', load);
+$('btnRenewWindow').addEventListener('click', () => {
+  if (confirm('将续期所有已进入 180 天窗口的域名，继续？')) renewWindow();
+});
+$('btnAuto').addEventListener('click', () => {
+  const th = Number($('threshold').value || 30);
+  if (confirm('将对剩余 ≤ ' + th + ' 天的域名执行续期，继续？')) runAuto(false);
+});
+$('btnDry').addEventListener('click', () => runAuto(true));
+$('threshold').addEventListener('change', saveThreshold);
+
+load();
+setInterval(() => { if (!BUSY && !document.hidden) load(); }, 60000);
+</script>
+</body>
+</html>

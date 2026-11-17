@@ -1,0 +1,15 @@
+{
+  "api_key": "在这里填 X-API-Key",
+  "api_secret": "在这里填 X-API-Secret",
+  "api_base": "https://api005.dnshe.com/index.php",
+  "threshold_days": 30,
+  "timeout": 25,
+  "web_host": "127.0.0.1",
+  "web_port": 8899,
+  "notify": {
+    "enabled": false,
+    "webhook_url": "",
+    "kind": "wecom",
+    "only_on_change": true
+  }
+}
