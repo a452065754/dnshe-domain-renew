@@ -98,17 +98,19 @@ on:
   workflow_dispatch:
 jobs:
   renew:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - run: python dnshe.py auto
         env:
           DNSHE_API_KEY: ${{ secrets.DNSHE_API_KEY }}
           DNSHE_API_SECRET: ${{ secrets.DNSHE_API_SECRET }}
+          DNSHE_THRESHOLD_DAYS: "180"      # config.json 不入库，阈值必须显式给
 ```
 
+仓库里已经带了一份可直接用的完整 workflow（含日志 artifact 上传），上面是精简版。
 凭据走环境变量 `DNSHE_API_KEY` / `DNSHE_API_SECRET`，不必落盘。私有仓库才适合这么干（Actions 日志里别打印密钥）。
 
 ---

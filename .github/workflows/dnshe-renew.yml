@@ -16,12 +16,14 @@ concurrency:
 
 jobs:
   renew:
-    runs-on: ubuntu-latest
+    # 固定 24.04：ubuntu-latest 将于 2026-10-19 起迁移到 26.04，写死避免运行时环境突变
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      # action 版本统一升到基于 Node 24 的主版本，消除 "Node.js 20 is deprecated" 告警
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -29,6 +31,8 @@ jobs:
         env:
           DNSHE_API_KEY: ${{ secrets.DNSHE_API_KEY }}
           DNSHE_API_SECRET: ${{ secrets.DNSHE_API_SECRET }}
+          # config.json 不入库，阈值必须在这里显式给，否则会用默认 30 天（与本机 180 不一致）
+          DNSHE_THRESHOLD_DAYS: "180"
           # 想推送到企业微信/钉钉，在仓库 Secrets 里加 DNSHE_WEBHOOK_URL，类型用 DNSHE_WEBHOOK_KIND
           DNSHE_NOTIFY_WEBHOOK: ${{ secrets.DNSHE_WEBHOOK_URL }}
           DNSHE_NOTIFY_KIND: ${{ secrets.DNSHE_WEBHOOK_KIND }}
@@ -38,7 +42,7 @@ jobs:
 
       - name: 上传运行日志
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dnshe-logs-${{ github.run_number }}
           path: logs/
